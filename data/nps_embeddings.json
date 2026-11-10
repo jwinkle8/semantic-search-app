@@ -1,0 +1,13 @@
+{
+  "embedding_model": "all-MiniLM-L6-v2 (ONNX, chromadb ONNXMiniLM_L6_V2)",
+  "chromadb_version": "1.5.9",
+  "shape": [
+    11043,
+    384
+  ],
+  "dtype": "float32",
+  "normalized": true,
+  "chunks_file": "data/nps_chunks.json",
+  "chunks_sha256": "fbfce887403fbfdd4d7d51e6ad68b5390c6b02a1aba7658cefb248467f213190",
+  "built_at": "2026-11-10T22:11:54+00:00"
+}
