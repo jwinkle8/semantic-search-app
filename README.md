@@ -1,16 +1,3 @@
----
-title: National Parks Semantic Search
-emoji: 🏞️
-colorFrom: green
-colorTo: blue
-sdk: gradio
-sdk_version: 6.31.0
-python_version: "3.10"
-app_file: app.py
-pinned: false
-short_description: Search U.S. national parks by meaning, not keywords
----
-
 # National Parks Semantic Search
 
 Search U.S. National Park Service parks, things to do, and campgrounds by describing what you
@@ -31,14 +18,15 @@ Source code and the full data pipeline: https://github.com/jwinkle8/semantic-sea
    chunk with `all-MiniLM-L6-v2` (Chroma's built-in ONNX version) and saves them to
    `data/nps_embeddings.npy`. At startup the app loads those vectors into an in-memory Chroma
    collection (cosine similarity) in about 6 s.
-4. **Search:** [app.py](app.py) is a Gradio app that embeds the query, filters by state and
-   result type, and shows one result per place or activity.
+4. **Search:** [streamlit_app.py](streamlit_app.py) is a Streamlit app that embeds the query,
+   filters by state and result type, and shows one result per place or activity. The index is
+   cached with `st.cache_resource`, so it loads once per server and is shared by all visitors.
 
 ## Run locally
 
 ```bash
-python -m venv .venv && .venv/bin/pip install -r requirements.txt
-.venv/bin/python app.py                 # loads the index (~10 s), then serves http://127.0.0.1:7860
+python3.12 -m venv .venv && .venv/bin/pip install -r requirements.txt
+.venv/bin/streamlit run streamlit_app.py   # serves http://localhost:8501; the index loads (~10 s) on first visit
 
 # Optional: rebuild the dataset from the NPS API (free key: https://www.nps.gov/subjects/developer/get-started.htm),
 # then recompute the embeddings to match it (~5 min on CPU) and commit both
@@ -48,16 +36,22 @@ NPS_API_KEY=... .venv/bin/python build_dataset.py
 
 ## Deploying
 
-```bash
-.venv/bin/hf auth login   # once, with a Hugging Face token that has write access
-./deploy.sh
-```
+The app runs on [Streamlit Community Cloud](https://share.streamlit.io), which deploys straight
+from this GitHub repository:
 
-[deploy.sh](deploy.sh) uploads only the files the app needs with `hf upload`, creating the Space
-on first run, and labels each Space commit with the GitHub commit it came from. It refuses to
-deploy uncommitted changes. `git push` to the Hub isn't used because the Git history contains
-earlier versions of the 16 MB chunk file, which is over Hugging Face's 10 MB limit for plain Git
-files. `hf upload` stores large files in Hugging Face's Xet storage automatically.
+1. Sign in at https://share.streamlit.io with GitHub and click **Create app**, then
+   **Yup, I have an app**.
+2. Repository `jwinkle8/semantic-search-app`, branch `main`, main file path `streamlit_app.py`.
+3. Under **Advanced settings**, set **Python version** to **3.12** (the version the pinned
+   requirements were tested with), then deploy.
+
+Community Cloud installs `requirements.txt` and redeploys when the branch changes, so every
+deployed version is a commit on `main`. Apps sleep after 12 hours without traffic; the next
+visitor wakes them.
+
+The app was first built for Hugging Face Spaces with Gradio. Hugging Face now requires a paid
+plan to host Gradio Spaces, so with the instructor's approval it moved to Streamlit Community
+Cloud. The Gradio version is in the Git history.
 
 ## Design decisions
 
