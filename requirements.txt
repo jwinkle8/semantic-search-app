@@ -1,0 +1,5 @@
+# Runtime dependencies for app.py, pinned to the versions it was tested with.
+# (build_dataset.py uses only the Python standard library.)
+gradio==6.31.0
+chromadb==1.5.9
+sentence-transformers==6.2.0
