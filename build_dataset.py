@@ -297,6 +297,15 @@ def build_chunks(parks: list[dict], things: list[dict], camps: list[dict],
     docs = park_docs(parks) + todo_docs(things) + campground_docs(camps)
     docs = [d for d in docs if d["body"].strip()]  # a few parks have no description
 
+    # The NPS API occasionally gives two *different* records the same id (seen in /thingstodo),
+    # so keep both and disambiguate the second rather than silently dropping one.
+    seen_sources: dict[str, int] = {}
+    for doc in docs:
+        key = f"{doc['doc_type']}-{doc['source_id']}"
+        seen_sources[key] = seen_sources.get(key, 0) + 1
+        if seen_sources[key] > 1:
+            doc["source_id"] += f"-dup{seen_sources[key]}"
+
     ids, texts, metadatas = [], [], []
     for doc in docs:
         park = park_by_code.get(doc["park_code"], {})
@@ -347,6 +356,32 @@ def build_chunks(parks: list[dict], things: list[dict], camps: list[dict],
     }
 
 
+# --------------------------------------------------------------------------- validate
+
+
+def validate(data: dict) -> None:
+    """Data-quality gate: refuse to write a chunk file that Chroma would reject or that is broken."""
+    ids, texts, metas = data["ids"], data["texts"], data["metadatas"]
+    errors = []
+    if not (len(ids) == len(texts) == len(metas)):
+        errors.append(f"column lengths differ: {len(ids)} ids, {len(texts)} texts, {len(metas)} metadatas")
+    dupes = len(ids) - len(set(ids))
+    if dupes:
+        errors.append(f"{dupes} duplicate ids")
+    empty = sum(1 for t in texts if "\n\n" not in t or not t.split("\n\n", 1)[1].strip())
+    if empty:
+        errors.append(f"{empty} chunks have a header but no body text")
+    bad_types = sum(1 for m in metas for v in m.values() if not isinstance(v, (str, int, float, bool)))
+    if bad_types:
+        errors.append(f"{bad_types} metadata values are not str/int/float/bool")
+    if errors:
+        sys.exit("Data-quality check failed:\n  - " + "\n  - ".join(errors))
+
+    no_park = sum(1 for m in metas if not m["park_name"])
+    print(f"Data-quality checks passed. Note: {no_park} chunks have no matching park "
+          "(the NPS record lists no park, or one outside /parks).")
+
+
 # --------------------------------------------------------------------------- main
 
 
@@ -379,6 +414,7 @@ def main() -> None:
 
     data = build_chunks(raw["parks"], raw["thingstodo"], raw["campgrounds"],
                         args.max_words, args.overlap)
+    validate(data)
     CHUNKS_PATH.parent.mkdir(parents=True, exist_ok=True)
     CHUNKS_PATH.write_text(json.dumps(data, indent=2, ensure_ascii=False))
     info = data["info"]
