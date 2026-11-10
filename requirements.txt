@@ -1,6 +1,6 @@
-# Runtime dependencies for app.py, pinned to the versions it was tested with (Python 3.12).
+# Runtime dependencies for streamlit_app.py, pinned to the versions it was tested with (Python 3.12).
 # (build_dataset.py uses only the Python standard library.)
 # Embeddings use Chroma's built-in ONNX all-MiniLM-L6-v2, so PyTorch isn't needed.
-gradio==6.31.0
+streamlit==1.67.0
 chromadb==1.5.9
 numpy==2.5.4
