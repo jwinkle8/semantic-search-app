@@ -3,3 +3,9 @@
 gradio==6.31.0
 chromadb==1.5.9
 sentence-transformers==6.2.0
+
+# CPU-only PyTorch. The free Hugging Face Space has no GPU, and PyPI's Linux build of torch
+# pulls in several GB of NVIDIA CUDA libraries. With this index added, pip picks
+# 2.14.1+cpu, which satisfies ==2.14.1 and ranks above the plain PyPI build.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.14.1

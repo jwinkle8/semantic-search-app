@@ -1,4 +1,59 @@
+---
+title: National Parks Semantic Search
+emoji: 🏞️
+colorFrom: green
+colorTo: blue
+sdk: gradio
+sdk_version: 6.31.0
+python_version: "3.10"
+app_file: app.py
+pinned: false
+short_description: Search U.S. national parks by meaning, not keywords
+---
+
 # National Parks Semantic Search
+
+Search U.S. National Park Service parks, things to do, and campgrounds by describing what you
+want, such as "kid-friendly short hike to a waterfall", and filter by state or result type.
+
+Source code and the full data pipeline: https://github.com/jwinkle8/semantic-search-app
+
+## How it works
+
+1. **Extract:** [build_dataset.py](build_dataset.py) downloads parks, things to do, and campgrounds
+   from the [NPS Data API](https://www.nps.gov/subjects/developer/) (public domain) and caches
+   each raw page under `data/raw/`.
+2. **Transform and chunk:** it strips HTML, joins each record to its park, and splits text into
+   chunks of up to 200 words with a context header such as
+   `Yosemite National Park (CA) | Thing to do: …`. It then runs data-quality checks and writes
+   `data/nps_chunks.json` (11,043 chunks).
+3. **Index:** at startup, [build_index.py](build_index.py) embeds the chunks with
+   `all-MiniLM-L6-v2` into an in-memory Chroma collection (cosine similarity).
+4. **Search:** [app.py](app.py) is a Gradio app that embeds the query, filters by state and
+   result type, and shows one result per place or activity.
+
+## Run locally
+
+```bash
+python -m venv .venv && .venv/bin/pip install -r requirements.txt
+.venv/bin/python app.py                 # builds the index (~80 s), then serves http://127.0.0.1:7860
+
+# Optional: rebuild the dataset from the NPS API (free key: https://www.nps.gov/subjects/developer/get-started.htm)
+NPS_API_KEY=... .venv/bin/python build_dataset.py
+```
+
+## Deploying
+
+```bash
+.venv/bin/hf auth login   # once, with a Hugging Face token that has write access
+./deploy.sh
+```
+
+[deploy.sh](deploy.sh) uploads only the files the app needs with `hf upload`, creating the Space
+on first run, and labels each Space commit with the GitHub commit it came from. It refuses to
+deploy uncommitted changes. `git push` to the Hub isn't used because the Git history contains
+earlier versions of the 16 MB chunk file, which is over Hugging Face's 10 MB limit for plain Git
+files. `hf upload` stores large files in Hugging Face's Xet storage automatically.
 
 ## Design decisions
 
