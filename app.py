@@ -12,7 +12,7 @@ import html
 
 import gradio as gr
 
-from build_index import build_collection
+from build_index import build_collection, embed
 
 STATE_NAMES = {
     "AL": "Alabama", "AK": "Alaska", "AS": "American Samoa", "AZ": "Arizona", "AR": "Arkansas",
@@ -84,7 +84,7 @@ def search(query: str, state_choice: str, result_types: list[str], num_results: 
     where = build_where(state_choice, result_types)
     # Over-fetch: several chunks of the same document often match, and we show each document once.
     res = collection.query(
-        query_embeddings=model.encode([query], normalize_embeddings=True).tolist(),
+        query_embeddings=embed([query], model),
         n_results=min(num_results * 4, collection.count()),
         where=where,
         include=["documents", "metadatas", "distances"],
