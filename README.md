@@ -3,6 +3,10 @@
 Search U.S. National Park Service parks, things to do, and campgrounds by describing what you
 want, such as "kid-friendly short hike to a waterfall", and filter by state or result type.
 
+<p align="center">
+   <img width="80%" "alt="Screenshot 2026-11-10 at 10 24 50 PM" src="readme_assets/web_app.png" />
+</p>
+
 **Live app: https://nps-semantic-search.streamlit.app/**
 
 ## How it works
